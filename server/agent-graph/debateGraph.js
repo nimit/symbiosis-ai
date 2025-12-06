@@ -182,7 +182,7 @@ async function nodeUpdateProfiles(state) {
   lProfile.debateHistory.push({ topic, result: "loss", date: Date.now() });
   await userProfileStore.save(loserId, lProfile);
 
-  return { uiMessage: null }; // No new message needed after save
+  return {};
 }
 
 // --- LOGIC / EDGES ---
@@ -213,8 +213,9 @@ const GraphState = Annotation.Root({
   // 1. PARTICIPANTS: Needs custom merging (Append + Unique)
   participants: Annotation({
     reducer: (x, y) => {
-      // If y is provided, merge it into x. Deduplicate using Set.
-      return y ? [...new Set([...x, ...y])] : x;
+      const prev = x || [];
+      const next = y || [];
+      return Array.from(new Set([...prev, ...next]));
     },
     default: () => [],
   }),
