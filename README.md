@@ -33,7 +33,7 @@ The most significant engineering challenge was modeling the data flow between th
 
 ## 🧠 Core Features & Implementation
 
-### 1. Persistent Memory Infrastructure
+### 1. Memory Infrastructure
 
 Standard AI interactions are ephemeral. The EQ Layer implements a **Memory Infrastructure Layer** that analyzes chat logs in real-time to infer user traits, interests, and communication styles.
 
