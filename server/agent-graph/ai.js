@@ -9,8 +9,6 @@ const ai = new GoogleGenAI({
 });
 
 export async function getImageAsBase64(prompt) {
-  return readFileSync("../alex-generated-min.png", "base64");
-  // image generation quota limit problems
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-image",
@@ -35,5 +33,5 @@ export async function getImageAsBase64(prompt) {
   } catch (error) {
     console.error("Error generating with Gemini:", error);
   }
-  return null;
+  return readFileSync("../alex-generated-min.png", "base64");
 }
