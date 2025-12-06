@@ -18,6 +18,21 @@ const model = new ChatGoogleGenerativeAI({
   temperature: 0.2,
 });
 
+// Define structured output schema for Gemini
+const UserDataExtractionSchema = z.object({
+  addToMemory: z.object({
+    userName: z.string().optional().describe("name of the user"),
+    userPreferences: z.array(z.string()).describe("Likes/Dislikes"),
+    userMood: z.array(z.string()).describe("Current emotional state"),
+    userCharacteristics: z
+      .array(z.string())
+      .describe("Static traits like age, job"),
+  }),
+  next: z
+    .enum(["moodscope", "match", "continue"])
+    .describe("The next step in the flow"),
+});
+
 /**
  * NODE 1: The Router & Extractor
  * Analyzes intent and extracts profile data.
@@ -42,26 +57,12 @@ export const messageNode = async (state) => {
   // B. Standard Flow: Fetch Profile -> Analyze -> Route
   let userMemory = await userProfileStore.get(userId);
 
-  // Define structured output schema for Gemini
-  const extractionSchema = z.object({
-    addToMemory: z.object({
-      userPreferences: z.array(z.string()).describe("Likes/Dislikes"),
-      userMood: z.array(z.string()).describe("Current emotional state"),
-      userCharacteristics: z
-        .array(z.string())
-        .describe("Static traits like age, job"),
-    }),
-    next: z
-      .enum(["moodscope", "match", "continue"])
-      .describe("The next step in the flow"),
-  });
-
-  const extractionChain = model.withStructuredOutput(extractionSchema);
+  const extractionChain = model.withStructuredOutput(UserDataExtractionSchema);
 
   const response = await extractionChain.invoke([
     new SystemMessage(`
       Current Profile: ${JSON.stringify(userMemory)}
-      Analyze the user's latest message. 
+      Analyze the user's latest message.
       1. Extract only **new** traits/moods to add to memory.
       2. If they ask for a match, set next='match'.
       3. If they ask to summarize/moodscope, set next='moodscope'.
@@ -71,6 +72,9 @@ export const messageNode = async (state) => {
   ]);
 
   // Save updated profile to Redis
+  if (response.addToMemory.userName) {
+    userMemory.userName = response.addToMemory.userName;
+  }
   userMemory.userPreferences.push(...response.addToMemory.userPreferences);
   userMemory.userMood.push(...response.addToMemory.userMood);
   userMemory.userCharacteristics.push(
@@ -184,7 +188,9 @@ export const approvalNode = async (state) => {
 export const continueConversationNode = async (state) => {
   const userMemory = await userProfileStore.get(state.userId);
 
-  const response = await model.invoke([
+  const extractionChain = model.withStructuredOutput(UserDataExtractionSchema);
+  const response = await extractionChain.invoke([
+    // const response = await model.invoke([
     new SystemMessage(
       `You are a helpful friend. Context: ${JSON.stringify(userMemory)}`
     ),

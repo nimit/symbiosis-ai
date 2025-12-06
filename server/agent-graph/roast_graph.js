@@ -89,13 +89,13 @@ const nodeRoastInit = async (state) => {
 
   const sysMsg = new SystemMessage(
     `You are a light-hearted roast master. 
-    OBJECTIVE: Roast the user based ONLY on their preferences. 
+    OBJECTIVE: Roast the user based ONLY on a subset of their preferences (about 4-5 lines). 
     TARGET: ${targetId}
     PREFERENCES: ${JSON.stringify(targetProfile.userPreferences)}
     
     Ending constraint: End by asking the other user (${
       partnerProfile.userName
-    }) whehter they are bold enough to defend ${targetId}.`
+    }) some version of - are you bold enough to defend ${targetId}.`
   );
 
   const response = await model.invoke([sysMsg, ...state.messages]);
@@ -151,7 +151,7 @@ const nodeRoastInaction = async (state) => {
 
   const sysMsg = new SystemMessage(
     `Context: ${targetProfile.userName} had to defend themselves because ${partnerProfile.userName} stayed silent.
-    TASK: Roast ${partnerProfile.userName} for being a unsupportive friend. Roast their connection light-heartedly.`
+    TASK: Roast ${partnerProfile.userName} for being a unsupportive friend. Roast their connection light-heartedly (4-5 lines).`
   );
 
   const response = await model.invoke([sysMsg, ...state.messages]);
@@ -264,8 +264,8 @@ const workflow = new StateGraph(GraphState)
   .addEdge("self_deprecate", END);
 
 // Compile with Redis Checkpointer
-// const checkpointer = new RedisSaver({ client: redis });
-const checkpointer = new MemorySaver();
+const checkpointer = new RedisSaver({ client: redis });
+// const checkpointer = new MemorySaver();
 export const app = workflow.compile({ checkpointer });
 
 // --- Helper Function ---
@@ -301,12 +301,12 @@ export async function processRoastMessage(threadId, userId, text) {
           break;
         }
       }
-      // console.log(
-      //   "single conversation event. at node",
-      //   nodeName,
-      //   "with response",
-      //   result.text
-      // );
+      console.log(
+        "roast graph at node",
+        nodeName,
+        "with response",
+        results.map((r) => r.text).join("\n")
+      );
     }
   }
 

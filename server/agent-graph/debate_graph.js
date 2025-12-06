@@ -11,8 +11,10 @@ import {
 } from "@langchain/langgraph";
 import { RedisSaver } from "@langchain/langgraph-checkpoint-redis";
 import { HumanMessage } from "@langchain/core/messages";
-import { z } from "zod";
+import { check, z } from "zod";
 import { userProfileStore } from "./db.js";
+// import redis from "./db.js";
+// import {createClient} from "ioredis";
 
 const model = new ChatGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -249,8 +251,7 @@ const workflow = new StateGraph(GraphState)
   .addEdge("nodeJudgeDebate", "nodeUpdateProfiles")
   .addEdge("nodeUpdateProfiles", END);
 
-// const checkpointer = await RedisSaver.fromUrl("redis://localhost:6379");
-const checkpointer = new MemorySaver();
+const checkpointer = await RedisSaver.fromUrl("redis://localhost:6379");
 const app = workflow.compile({ checkpointer });
 
 // --- EXPORTED RUNNER ---
@@ -269,9 +270,11 @@ export async function processDebateMessage(threadId, userId, text) {
   const finalState = await app.invoke(inputDelta, config);
 
   // 4. Return formatted result
-  return {
+  const result = {
     text: finalState.uiMessage || null,
   };
+  console.log("debate reutrning", result);
+  return result;
 }
 
 // export async function processDebateMessage(threadId, userId, userMessage) {

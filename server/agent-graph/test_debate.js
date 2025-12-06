@@ -1,4 +1,4 @@
-import { processDebateMessage } from "./debateGraph.js";
+import { processDebateMessage } from "./debate_graph.js";
 import { userProfileStore } from "./db.js";
 
 const THREAD_ID = "stream_demo_room_" + Date.now();

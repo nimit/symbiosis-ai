@@ -11,7 +11,7 @@ export const userProfileStore = {
     return data
       ? JSON.parse(data)
       : {
-          userName: "<user>",
+          userName: "",
           userPreferences: [],
           userMood: [],
           userCharacteristics: [],
@@ -37,6 +37,21 @@ export const populateRedis = async () => {
     userCharacteristics: ["ambitious", "social", "software engineer"],
   };
   redis.set("user:+19342559239", JSON.stringify(data));
+
+  const data2 = {
+    userName: "ali",
+    userPreferences: [
+      "hates dogs; has been bitten thrice",
+      "likes living in the city",
+      "enjoys working out in gym",
+      "recently bought a size 14 shoe",
+    ],
+    userMood: ["frustrated"],
+    userCharacteristics: ["introvert", "sporty", "machine learning engineer"],
+  };
+  redis.set("user:+19342559044", JSON.stringify(data2));
 };
 
 export default redis;
+
+// "{\"userName\":\"<user>\",\"userPreferences\":[\"likes One Piece\",\"likes Naruto\",\"thinks One Piece and Naruto are the best anime\",\"needs coding buddies\",\"wishes for a simpler life\",\"likes dogs\",\"likes mountains\"],\"userMood\":[\"tired\",\"wishing for simplicity\"],\"userCharacteristics\":[\"named Alex\"],\"debateHistory\":[]}"
