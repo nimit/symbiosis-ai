@@ -14,11 +14,12 @@ export const userProfileStore = {
           userPreferences: [],
           userMood: [],
           userCharacteristics: [],
+          debateHistory: [],
         };
   },
   save: async (userId, data) => {
     await redis.set(`user:${userId}`, JSON.stringify(data));
-    console.log("saving: ", data);
+    console.log(`[DB] Saved data for ${userId}`);
   },
 };
 
