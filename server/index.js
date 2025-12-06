@@ -86,10 +86,10 @@ app.post("/", async (req, res) => {
     const mode = await redis.get(`chatid-${chatId}-mode`);
     if (mode === "debate") {
       console.log("debate mode");
-      graphResult = await processDebateMessage(sender, incomingText);
+      graphResult = await processDebateMessage(chatId, sender, incomingText);
     } else if (mode === "roast") {
       console.log("roast mode");
-      graphResult = await processRoastMessage(sender, incomingText);
+      graphResult = await processRoastMessage(chatId, sender, incomingText);
     } else {
       if (incomingText == "gc:debate") {
         await startDebate(chatId);
