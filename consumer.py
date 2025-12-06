@@ -64,7 +64,7 @@ async def consume():
               # print(f"Topic: {message.topic}")
               # print(f"Partition: {message.partition}")
               # print(f"Offset: {message.offset}")
-              print(f"\nReceived message: {message.value['data']['text']}")
+              print(f"\nReceived message: {message.value.get('data', {}).get('text', '')}")
               asyncio.create_task(send_message_task(session, message.value))
             
     except Exception as e:

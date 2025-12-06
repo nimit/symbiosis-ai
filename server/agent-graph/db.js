@@ -50,6 +50,14 @@ export const populateRedis = async () => {
     userCharacteristics: ["introvert", "sporty", "machine learning engineer"],
   };
   redis.set("user:+19342559044", JSON.stringify(data2));
+
+  const data3 = {
+    userName: "mr. x",
+    userPreferences: ["likes anime", "likes dogs", "likes mountains"],
+    userMood: ["frustrated"],
+    userCharacteristics: ["introvert", "sporty", "machine learning engineer"],
+  };
+  redis.set("user:+15102055337", JSON.stringify(data3));
 };
 
 export default redis;
