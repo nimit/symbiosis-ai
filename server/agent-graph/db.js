@@ -20,7 +20,7 @@ export const userProfileStore = {
   },
   save: async (userId, data) => {
     await redis.set(`user:${userId}`, JSON.stringify(data));
-    console.log(`[DB] Saved data for ${userId}`);
+    console.log(`[DB] Saved data for ${userId} | ${JSON.stringify(data)}`);
   },
 };
 
