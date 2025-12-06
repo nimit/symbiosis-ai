@@ -1,9 +1,15 @@
-import dotenv from 'dotenv';
-dotenv.config({ path: '../../.env' });
+import dotenv from "dotenv";
+dotenv.config({ path: "../.env" });
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { SystemMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
+import {
+  SystemMessage,
+  HumanMessage,
+  AIMessage,
+} from "@langchain/core/messages";
 import { z } from "zod";
 import { userProfileStore } from "./db.js";
+import { getImageAsBase64 } from "./ai.js";
+import { buildIntroImagePrompt } from "./prompt_gen.js";
 
 // Initialize Gemini
 const model = new ChatGoogleGenerativeAI({
@@ -23,9 +29,9 @@ export const messageNode = async (state) => {
   // A. Check if we are locked in a match flow (Hijack logic)
   if (state.matchFlowActive) {
     if (state.nextStep === "wait_for_intro") {
-      return { 
+      return {
         matchIntroMessage: lastMessage,
-        nextStep: "generate_image" // Signal to route to generator
+        nextStep: "generate_image", // Signal to route to generator
       };
     }
     if (state.nextStep === "wait_for_approval") {
@@ -41,9 +47,13 @@ export const messageNode = async (state) => {
     addToMemory: z.object({
       userPreferences: z.array(z.string()).describe("Likes/Dislikes"),
       userMood: z.array(z.string()).describe("Current emotional state"),
-      userCharacteristics: z.array(z.string()).describe("Static traits like age, job"),
+      userCharacteristics: z
+        .array(z.string())
+        .describe("Static traits like age, job"),
     }),
-    next: z.enum(["moodscope", "match", "continue"]).describe("The next step in the flow"),
+    next: z
+      .enum(["moodscope", "match", "continue"])
+      .describe("The next step in the flow"),
   });
 
   const extractionChain = model.withStructuredOutput(extractionSchema);
@@ -52,7 +62,7 @@ export const messageNode = async (state) => {
     new SystemMessage(`
       Current Profile: ${JSON.stringify(userMemory)}
       Analyze the user's latest message. 
-      1. Extract new traits/moods to add to memory.
+      1. Extract only **new** traits/moods to add to memory.
       2. If they ask for a match, set next='match'.
       3. If they ask to summarize/moodscope, set next='moodscope'.
       4. Otherwise, set next='continue'.
@@ -63,7 +73,9 @@ export const messageNode = async (state) => {
   // Save updated profile to Redis
   userMemory.userPreferences.push(...response.addToMemory.userPreferences);
   userMemory.userMood.push(...response.addToMemory.userMood);
-  userMemory.userCharacteristics.push(...response.addToMemory.userCharacteristics);
+  userMemory.userCharacteristics.push(
+    ...response.addToMemory.userCharacteristics
+  );
   await userProfileStore.save(userId, userMemory);
 
   return {
@@ -79,7 +91,11 @@ export const startMatchNode = async (state) => {
   return {
     matchFlowActive: true,
     nextStep: "wait_for_intro",
-    messages: [new AIMessage("I can find a match! send a short intro message for them (or type 'skip').")],
+    messages: [
+      new AIMessage(
+        "I can find a match! send a short intro message for them (or type 'skip')."
+      ),
+    ],
   };
 };
 
@@ -90,15 +106,26 @@ export const startMatchNode = async (state) => {
 export const generateMatchProfileNode = async (state) => {
   const userMemory = await userProfileStore.get(state.userId);
   const intro = state.matchIntroMessage;
-  const prompt = buildConnectionImagePrompt(userMemory.userPreferences.join(",  "), userMemory.userMood.join(", "), userMemory.userCharacteristics.join(", "), intro);
+  const prompt = buildIntroImagePrompt(
+    userMemory.userPreferences.join(",  "),
+    userMemory.userMood.join(", "),
+    userMemory.userCharacteristics.join(", "),
+    intro
+  );
   console.log(`[System] Generating image with prompt: ${prompt}`);
-  
-  const mockImageUrl = "http://fake-image.com/avatar.png";
+
+  const rawBase64 = await getImageAsBase64(prompt);
 
   return {
-    matchImageUrl: mockImageUrl,
     nextStep: "wait_for_approval",
-    messages: [new AIMessage(`I've generated your profile image based on your mood: [${prompt}]. Do you approve? (Yes/No)`)],
+    messages: [
+      new AIMessage(`I've generated an intro image for you. Ready to send?`),
+    ],
+    intro_img: {
+      data_base64: rawBase64,
+      filename: "intro_image.png",
+      mime_type: "image/png",
+    },
   };
 };
 
@@ -107,24 +134,28 @@ export const generateMatchProfileNode = async (state) => {
  */
 export const approvalNode = async (state) => {
   const lastMessage = state.messages[state.messages.length - 1].content;
-  
-  const decisionChain = model.withStructuredOutput(z.object({
-    approved: z.boolean(),
-    feedback: z.string().optional(),
-  }));
 
-  console.log("BEFORE")
+  const decisionChain = model.withStructuredOutput(
+    z.object({
+      approved: z.boolean(),
+      feedback: z.string().optional(),
+    })
+  );
+
   const decision = await decisionChain.invoke([
-    new HumanMessage("Did the user approve the image? If No, extract what needs to change."),
-    new HumanMessage(lastMessage)
+    new HumanMessage(
+      "Did the user approve the image? If No, extract what needs to change."
+    ),
+    new HumanMessage(lastMessage),
   ]);
-  console.log("AFTER")
 
   if (decision.approved) {
     return {
       matchFlowActive: false,
       nextStep: "continue",
-      messages: [new AIMessage("Profile approved! Searching for matches now...")],
+      messages: [
+        new AIMessage("Profile approved! Searching for matches now..."),
+      ],
     };
   } else {
     // If rejected, save feedback as a negative preference so the next generation is better
@@ -132,11 +163,17 @@ export const approvalNode = async (state) => {
     userMemory.userPreferences.push(`Visual tweak: ${decision.feedback}`);
     await userProfileStore.save(state.userId, userMemory);
 
-    console.log(`[System] Adjusting for "${decision.feedback}" and regenerating...`);
+    console.log(
+      `[System] Adjusting for "${decision.feedback}" and regenerating...`
+    );
 
     return {
       nextStep: "generate_image", // Loop back
-      messages: [new AIMessage(`Got it. Adjusting for "${decision.feedback}" and regenerating...`)]
+      messages: [
+        new AIMessage(
+          `Got it. Adjusting for "${decision.feedback}" and regenerating...`
+        ),
+      ],
     };
   }
 };
@@ -148,8 +185,10 @@ export const continueConversationNode = async (state) => {
   const userMemory = await userProfileStore.get(state.userId);
 
   const response = await model.invoke([
-    new SystemMessage(`You are a helpful friend. User Context: ${JSON.stringify(userMemory)}`),
-    ...state.messages
+    new SystemMessage(
+      `You are a helpful friend. Context: ${JSON.stringify(userMemory)}`
+    ),
+    ...state.messages,
   ]);
 
   return { messages: [response] };

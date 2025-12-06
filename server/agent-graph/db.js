@@ -8,15 +8,18 @@ export const userProfileStore = {
   get: async (userId) => {
     const data = await redis.get(`user:${userId}`);
     // Return default structure if empty
-    return data ? JSON.parse(data) : { 
-      userPreferences: [], 
-      userMood: [], 
-      userCharacteristics: [] 
-    };
+    return data
+      ? JSON.parse(data)
+      : {
+          userPreferences: [],
+          userMood: [],
+          userCharacteristics: [],
+        };
   },
   save: async (userId, data) => {
     await redis.set(`user:${userId}`, JSON.stringify(data));
-  }
+    console.log("saving: ", data);
+  },
 };
 
 export default redis;

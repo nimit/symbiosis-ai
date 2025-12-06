@@ -1,9 +1,15 @@
-export const buildConnectionImagePrompt = (userPreferences, userMood, userCharacteristics, message) => {
+export const buildIntroImagePrompt = (
+  userPreferences,
+  userMood,
+  userCharacteristics,
+  message
+) => {
   userMood = userMood.replace("`", "");
   userPreferences = userPreferences.replace("`", "");
   userCharacteristics = userCharacteristics.replace("`", "");
   message = message ? message.replace("`", "") : undefined;
-  const prompt = `
+  const prompt =
+    `
   **ROLE & STYLE INSTRUCTION:**
 Act as a visionary concept artist. First, analyze the following user preferences for any specific art styles, famous artists, or visual genres: "**${userPreferences}**".
 * **IF** a specific style is detected (e.g., "Anime", "Van Gogh", "Cyberpunk", "Cubism", "Watercolor", "Pixel Art", "Noir"), you **MUST** execute the entire image in that specific style.
@@ -22,9 +28,12 @@ Create a stylized, metaphorical character illustration representing a user descr
 
 **TECHNICAL SPECS:**
 High-resolution digital art, evocative composition, trending on ArtStation, visually storytelling, aesthetic masterpiece. --ar 4:5
-  ` + (message ? `**THE CONNECTION CALL-TO-ACTION:**
+  ` +
+    (message
+      ? `**THE CONNECTION CALL-TO-ACTION:**
   Integrate a subtle but clear visual metaphor in the foreground that represents their current intent: "**${message}**".
   * This element should act as an invitation to the viewer (e.g., an open book, a second controller, a distinct path leading forward).
-  ` : ``);
+  `
+      : ``);
   return prompt;
 };
