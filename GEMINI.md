@@ -1,0 +1,1 @@
+Use the `examples/` directory for examples of how to use the Kafka API and the openapi spec for the iMessage-like message API is in `imessage_openapi.json` to use only when necessary.
