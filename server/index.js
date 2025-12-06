@@ -98,7 +98,12 @@ const runServer = async () => {
           // 3. Trigger API Reply only if we got a response
           // (If the graph stopped at a Human-in-the-loop checkpoint, aiResponseText might be null)
           if (graphResult) {
-            await sendApiReply(chatId, graphResult);
+            if (!Array.isArray(graphResult)) {
+              graphResult = [graphResult];
+            }
+            for (const result of graphResult) {
+              await sendApiReply(chatId, result);
+            }
           } else {
             console.warn(
               `Create waiting for human approval or no response generated for chat ${chatId}`
