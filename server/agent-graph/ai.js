@@ -2,12 +2,15 @@ import dotenv from "dotenv";
 dotenv.config({ path: "../.env" });
 
 import { GoogleGenAI } from "@google/genai";
+import { readFileSync } from "fs";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
 export async function getImageAsBase64(prompt) {
+  return readFileSync("../alex-generated-min.png", "base64");
+  // image generation quota limit problems
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-image",

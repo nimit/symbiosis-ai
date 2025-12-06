@@ -10,7 +10,11 @@ import {
   MemorySaver,
 } from "@langchain/langgraph";
 import { RedisSaver } from "@langchain/langgraph-checkpoint-redis";
-import { SystemMessage, HumanMessage } from "@langchain/core/messages";
+import {
+  SystemMessage,
+  HumanMessage,
+  AIMessage,
+} from "@langchain/core/messages";
 import { z } from "zod";
 import redis, { userProfileStore } from "./db.js";
 
@@ -80,16 +84,17 @@ const nodeBuffer = async (state) => {
 // 2. Init Roast: Roasts the first user found in participants
 const nodeRoastInit = async (state) => {
   const targetId = state.participants[0];
-  const profile = await userProfileStore.get(targetId);
+  const targetProfile = await userProfileStore.get(targetId);
+  const partnerProfile = await userProfileStore.get(state.participants[1]);
 
   const sysMsg = new SystemMessage(
     `You are a light-hearted roast master. 
     OBJECTIVE: Roast the user based ONLY on their preferences. 
     TARGET: ${targetId}
-    PREFERENCES: ${JSON.stringify(profile.userPreferences)}
+    PREFERENCES: ${JSON.stringify(targetProfile.userPreferences)}
     
     Ending constraint: End by asking the other user (${
-      state.participants[1]
+      partnerProfile.userName
     }) whehter they are bold enough to defend ${targetId}.`
   );
 
@@ -109,14 +114,15 @@ const nodeAnalyzeDefense = async (state) => {
   const inputs = state.currentInputs;
   const targetId = state.roastTargetId;
   const partnerId = state.participants.find((p) => p !== targetId);
-
+  const targetProfile = await userProfileStore.get(targetId);
+  const partnerProfile = await userProfileStore.get(partnerId);
   // Helper to format the input or mark as silence
   const getMsg = (uid) =>
     inputs[uid] ? `"${inputs[uid]}"` : "(SILENCE / NO RESPONSE)";
 
   const context = `
-    Roast Target: ${targetId}
-    Partner: ${partnerId}
+    Roast Target: ${targetProfile.userName}
+    Partner: ${partnerProfile.userName}
     
     Message from Target: ${getMsg(targetId)}
     Message from Partner: ${getMsg(partnerId)}
@@ -140,13 +146,14 @@ const nodeAnalyzeDefense = async (state) => {
 const nodeRoastInaction = async (state) => {
   const targetId = state.roastTargetId;
   const partnerId = state.participants.find((p) => p !== targetId);
+  const targetProfile = await userProfileStore.get(targetId);
+  const partnerProfile = await userProfileStore.get(partnerId);
 
   const sysMsg = new SystemMessage(
-    `Context: ${targetId} had to defend themselves because ${partnerId} stayed silent.
-    TASK: Roast ${partnerId} for being a unsupportive friend. Roast their connection light-heartedly.`
+    `Context: ${targetProfile.userName} had to defend themselves because ${partnerProfile.userName} stayed silent.
+    TASK: Roast ${partnerProfile.userName} for being a unsupportive friend. Roast their connection light-heartedly.`
   );
 
-  console.log("Roast Inaction: ", sysMsg.content);
   const response = await model.invoke([sysMsg, ...state.messages]);
   return { messages: [response], uiMessage: response.content };
 };
@@ -155,11 +162,16 @@ const nodeRoastInaction = async (state) => {
 const nodeRoastHypocrisy = async (state) => {
   const targetId = state.roastTargetId;
   const partnerId = state.participants.find((p) => p !== targetId);
+  const targetProfile = await userProfileStore.get(targetId);
   const partnerProfile = await userProfileStore.get(partnerId);
 
   const sysMsg = new SystemMessage(
-    `Context: ${partnerId} jumped in to defend ${targetId}.
-    TASK: Turn the tables. Roast ${partnerId} using THEIR own preferences against them.
+    `Context: ${partnerProfile.userName} jumped in to defend ${
+      targetProfile.userName
+    }.
+    TASK: Turn the tables. Roast ${
+      partnerProfile.userName
+    } using THEIR own preferences against them.
     PARTNER PREFERENCES: ${JSON.stringify(partnerProfile.userPreferences)}`
   );
 
@@ -172,10 +184,15 @@ const nodeSelfDeprecate = async (state) => {
   const sysMsg = new SystemMessage(
     "The session is ending. Apologize for any offense and say goodbye."
   );
-  const response = await model.invoke([sysMsg, ...state.messages]);
+  // const response = await model.invoke([sysMsg, ...state.messages]);
+  const response = {
+    content:
+      "That's enough fun for today. I apologize if I offended anyone. Have a great day!",
+  };
 
   return {
-    messages: [response],
+    messages: [new AIMessage(response.content)],
+    // messages: [response],
     uiMessage: response.content,
     stage: "done",
     currentInputs: "CLEAR",

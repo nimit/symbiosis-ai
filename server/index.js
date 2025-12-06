@@ -3,6 +3,7 @@ dotenv.config({ path: "../.env" });
 import { Kafka } from "kafkajs";
 import axios from "axios";
 import { processLangGraphMessage } from "./agent-graph/single_user.js";
+import { populateRedis } from "./agent-graph/db.js";
 
 const API_BASE_URL = process.env.API_BASE_URL;
 
@@ -90,10 +91,7 @@ const runServer = async () => {
         try {
           // 2. Send to LangGraph (Using sender as the thread_id)
           // This maintains conversation memory for this specific chat
-          const graphResult = await processLangGraphMessage(
-            sender,
-            incomingText
-          );
+          let graphResult = await processLangGraphMessage(sender, incomingText);
 
           // 3. Trigger API Reply only if we got a response
           // (If the graph stopped at a Human-in-the-loop checkpoint, aiResponseText might be null)
@@ -105,9 +103,7 @@ const runServer = async () => {
               await sendApiReply(chatId, result);
             }
           } else {
-            console.warn(
-              `Create waiting for human approval or no response generated for chat ${chatId}`
-            );
+            console.warn(`No response generated for chat ${chatId}`);
           }
         } catch (err) {
           console.error("Error processing LangGraph flow:", err);
@@ -119,4 +115,6 @@ const runServer = async () => {
   }
 };
 
+// for testing (can get this data from twitter/normal convos)
+populateRedis();
 runServer();

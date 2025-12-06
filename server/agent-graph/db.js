@@ -11,6 +11,7 @@ export const userProfileStore = {
     return data
       ? JSON.parse(data)
       : {
+          userName: "<user>",
           userPreferences: [],
           userMood: [],
           userCharacteristics: [],
@@ -21,6 +22,21 @@ export const userProfileStore = {
     await redis.set(`user:${userId}`, JSON.stringify(data));
     console.log(`[DB] Saved data for ${userId}`);
   },
+};
+
+export const populateRedis = async () => {
+  const data = {
+    userName: "alex",
+    userPreferences: [
+      "likes dogs",
+      "prefers mountains to beaches",
+      "enjoys working out in gym",
+      "likes anime",
+    ],
+    userMood: ["tired"],
+    userCharacteristics: ["ambitious", "social", "software engineer"],
+  };
+  redis.set("user:+19342559239", JSON.stringify(data));
 };
 
 export default redis;

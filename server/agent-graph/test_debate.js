@@ -17,10 +17,12 @@ async function graph(userId, userMessage) {
 
   // Ensure DB data exists
   await userProfileStore.save(USER_A, {
+    userName: "Alice",
     userPreferences: ["Code"],
     debateHistory: [],
   });
   await userProfileStore.save(USER_B, {
+    userName: "Bob",
     userPreferences: ["Design"],
     debateHistory: [],
   });

@@ -123,8 +123,8 @@ export const generateMatchProfileNode = async (state) => {
     ],
     intro_img: {
       data_base64: rawBase64,
-      filename: "intro_image.png",
-      mime_type: "image/png",
+      filename: "image.jpg",
+      mime_type: "image/jpeg",
     },
   };
 };

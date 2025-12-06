@@ -12,7 +12,7 @@ import {
   generateMatchProfileNode,
   approvalNode,
   continueConversationNode,
-} from "./nodes.js";
+} from "./single_user_nodes.js";
 import { HumanMessage } from "@langchain/core/messages";
 
 // 1. Define the State Object
@@ -107,12 +107,14 @@ export async function processLangGraphMessage(threadId, userMessage) {
         result.text = lastMsg.content;
       }
       if (nodeName === "generator" && data.intro_img) {
-        result.attachment = data.intro_img;
+        console.log("set attachment", data.intro_img.data_base64.slice(0, 20));
+        result.attachments = [data.intro_img];
       }
       console.log(
-        "single conversation event. at node",
+        "single user event at node",
         nodeName,
         "with response",
+        result.attachment ? "and attachment" : "",
         result.text
       );
     }

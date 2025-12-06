@@ -10,10 +10,10 @@ async function graph(userId, userMessage) {
   const USER = "user_123";
 
   // Interaction 1: Normal Chat
-  await graph(
-    USER,
-    "Hi, I'm Alex. I'm a software engineer and I feel excited becaused of the new season of Stranger Things"
-  );
+  // await graph(
+  //   USER,
+  //   "Hi, I'm Alex. I'm a software engineer and I feel excited becaused of the new season of Stranger Things"
+  // );
 
   // Interaction 2: Request Match
   await graph(USER, "I think I'm ready to meet someone.");
