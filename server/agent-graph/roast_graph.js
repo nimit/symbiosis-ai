@@ -264,7 +264,7 @@ const workflow = new StateGraph(GraphState)
   .addEdge("self_deprecate", END);
 
 // Compile with Redis Checkpointer
-const checkpointer = new RedisSaver({ client: redis });
+const checkpointer = new MemorySaver();
 // const checkpointer = new MemorySaver();
 export const app = workflow.compile({ checkpointer });
 
